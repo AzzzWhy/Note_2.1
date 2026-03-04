@@ -1,0 +1,2868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人私密笔记</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #ffffff;
+            background-image: linear-gradient(#e0e0e0 1px, transparent 1px),
+                             linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 100vh;
+            overflow: auto;
+        }
+        
+        .container {
+            background-color: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .notes-panel {
+            width: 300px;
+            background-color: #f9f9f9;
+            border-right: 1px solid #ddd;
+            padding: 1rem;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .add-note-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-toggle-btn {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        /* 当侧栏展开时，调整按钮位置 */
+        .sidebar {
+            /* 侧栏展开时的样式 */
+        }
+        
+        .sidebar:not(.collapsed) ~ .sidebar-toggle-btn {
+            left: 20px;
+        }
+        
+        .sidebar-toggle-btn:hover {
+            background-color: #e67e22;
+            transform: scale(1.1);
+        }
+        
+        .sidebar-toggle-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .add-note-btn:hover {
+            background-color: #45a049;
+            transform: scale(1.1);
+        }
+        
+        .add-note-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .folder-btn {
+            position: fixed;
+            top: 20px;
+            left: 80px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 99;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .folder-btn:hover {
+            background-color: #1976D2;
+            transform: scale(1.1);
+        }
+        
+        .folder-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .folder-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            width: 200px;
+            max-height: 400px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            z-index: 101;
+            display: none;
+            overflow-y: auto;
+            opacity: 0;
+            transform: scale(0.9) translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .folder-panel.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        .folder-panel h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .folder-note-item {
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+        
+        .folder-note-item:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .folder-note-item h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            color: #333;
+        }
+        
+        .folder-note-item p {
+            font-size: 0.7rem;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .trash-btn {
+            position: fixed;
+            top: 20px;
+            left: 190px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 99;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            left: 250px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #9E9E9E;
+            color: white;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 99;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .logout-btn:hover {
+            background-color: #757575;
+            transform: scale(1.1);
+        }
+        
+        .logout-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .trash-btn:hover {
+            background-color: #c0392b;
+            transform: scale(1.1);
+        }
+        
+        .trash-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .canvas-btn {
+            position: fixed;
+            top: 20px;
+            left: 240px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 99;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+        
+        .canvas-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        /* 侧栏样式 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 180px;
+            height: 100vh;
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar h3 {
+            margin-top: 0;
+            margin-bottom: 0;
+            color: #343a40;
+            font-size: 18px;
+        }
+        
+        .toggle-sidebar-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #343a40;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .toggle-sidebar-btn:hover {
+            background-color: #dee2e6;
+        }
+        
+        .canvas-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .canvas-item {
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        
+        .canvas-item:hover {
+            background-color: #dee2e6;
+        }
+        
+        .canvas-item.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .add-canvas-btn {
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #e3f2fd;
+            color: #1976d2;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .add-canvas-btn:hover {
+            background-color: #bbdefb;
+        }
+        
+        /* 调整画布区域位置，避免被侧栏遮挡 */
+        .canvas-area {
+            margin-left: 180px;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .canvas-area.expanded {
+            margin-left: 0;
+        }
+        
+        /* 调整按钮位置 */
+        .add-note-btn, .sidebar-toggle-btn, .folder-btn, .trash-btn, .canvas-btn {
+            transition: left 0.3s ease;
+        }
+        
+        /* 当侧栏收起时，调整按钮位置 */
+        body.sidebar-collapsed .add-note-btn {
+            left: 20px;
+        }
+        
+        body.sidebar-collapsed .sidebar-toggle-btn {
+            left: 20px;
+        }
+        
+        body.sidebar-collapsed .folder-btn {
+            left: 80px;
+        }
+        
+        body.sidebar-collapsed .trash-btn {
+            left: 140px;
+        }
+        
+        body.sidebar-collapsed .logout-btn {
+            left: 200px;
+        }
+        
+        body.sidebar-collapsed .canvas-btn {
+            left: 260px;
+        }
+        
+        .trash-panel {
+            position: fixed;
+            top: 80px;
+            left: 240px;
+            width: 200px;
+            max-height: 400px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            z-index: 101;
+            display: none;
+            overflow-y: auto;
+            opacity: 0;
+            transform: scale(0.9) translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .trash-panel.show {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        .trash-panel h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .trash-note-item {
+            background-color: #fef5f5;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .trash-note-item:hover {
+            background-color: #f8d7da;
+        }
+        
+        .trash-note-item h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            color: #333;
+        }
+        
+        .trash-note-item p {
+            font-size: 0.7rem;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .trash-note-actions {
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 0.3rem;
+        }
+        
+        .restore-btn, .delete-permanently-btn {
+            padding: 0.2rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            transition: background-color 0.3s ease;
+        }
+        
+        .restore-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .restore-btn:hover {
+            background-color: #218838;
+        }
+        
+        .delete-permanently-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .delete-permanently-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .empty-trash-btn {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            width: 100%;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.3s ease;
+        }
+        
+        .empty-trash-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .close-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #999;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            background-color: #666;
+            transform: scale(1.1);
+        }
+        
+        .note-form-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 600px;
+            z-index: 200;
+            display: none;
+            animation: formFadeIn 0.3s ease-out;
+        }
+        
+        .content-editor-popup {
+            position: fixed;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            z-index: 250;
+            display: none;
+            animation: contentEditorFadeIn 0.4s ease-out;
+            overflow: auto;
+        }
+        
+        @keyframes contentEditorFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        .note-form-popup .form-actions .content-btn {
+            padding: 0.5rem 1rem;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: buttonFadeIn 0.5s ease-out 0.6s both;
+        }
+        
+        .note-form-popup .form-actions .content-btn:hover {
+            background-color: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+        
+        .note-form-popup .form-actions .content-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        @keyframes formFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .note-form-popup h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .note-form-popup input {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .note-form-popup input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        .content-with-toolbar textarea {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 0;
+            font-size: 1.1rem;
+            resize: vertical;
+            min-height: 250px;
+            max-height: 400px;
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .content-with-toolbar textarea:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 2px rgba(76, 175, 80, 0.1);
+        }
+        
+        .content-with-toolbar {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .text-format-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.4rem 0.8rem;
+            background-color: white;
+            position: relative;
+        }
+        
+        .color-picker {
+            position: relative;
+        }
+        
+        .color-picker input[type="color"] {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.2s ease;
+        }
+        
+        .color-picker input[type="color"]:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .toolbar-item {
+            font-size: 0.8rem;
+            color: #666;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 20px;
+        }
+        
+        .toolbar-item:hover {
+            background-color: #e8e8e8;
+        }
+        
+        .toolbar-item:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .toolbar-item.active {
+            background-color: #e3f2fd;
+            color: #1976D2;
+            font-weight: bold;
+        }
+        
+        .toolbar-item:nth-child(4) {
+            font-style: italic;
+        }
+        
+        .font-size-menu {
+            position: absolute;
+            top: 100%;
+            left: 24px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            min-width: 80px;
+        }
+        
+        .menu-item {
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .menu-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .note-form-popup .form-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.2rem;
+            justify-content: space-between;
+        }
+        
+        .note-form-popup .form-actions .save-btn,
+        .content-editor-popup .form-actions .save-btn {
+            padding: 0.5rem 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: buttonFadeIn 0.5s ease-out 0.7s both;
+        }
+        
+        @keyframes buttonFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .note-form-popup .form-actions .save-btn:hover,
+        .content-editor-popup .form-actions .save-btn:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .note-form-popup .form-actions .save-btn:active,
+        .content-editor-popup .form-actions .save-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        @keyframes buttonPress {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .note-form-popup .form-actions .cancel-btn,
+        .content-editor-popup .form-actions .cancel-btn {
+            padding: 0.5rem;
+            width: 36px;
+            height: 36px;
+            background-color: white;
+            color: #666;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: buttonFadeIn 0.5s ease-out 0.8s both;
+        }
+        
+        .note-form-popup .form-actions .cancel-btn:hover,
+        .content-editor-popup .form-actions .cancel-btn:hover {
+            background-color: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .note-form-popup .form-actions .cancel-btn:active,
+        .content-editor-popup .form-actions .cancel-btn:active {
+            animation: buttonPress 0.2s ease-out;
+        }
+        
+        .note-animation {
+            position: fixed;
+            width: 200px;
+            min-height: 120px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            z-index: 50;
+            cursor: move;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .note-animation:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .note-animation .note-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            position: relative;
+            width: 100%;
+        }
+        
+        .note-animation .note-header .header-buttons {
+            position: absolute;
+            right: 0;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .note-animation .note-title {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
+        .note-animation .open-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .note-animation .open-btn:hover {
+            background-color: #1B5E20;
+            transform: scale(1.1);
+        }
+        
+        .note-animation .note-content {
+            font-size: 0.7rem;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            margin-bottom: 1rem;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .note-animation .link-btn {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .note-animation .link-btn:hover {
+            background-color: #1976D2;
+            transform: translateX(-50%) scale(1.1);
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .draggable-note {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: move;
+            z-index: 10;
+            min-width: 200px;
+            max-width: 300px;
+        }
+        
+        .draggable-note h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .draggable-note p {
+            margin-bottom: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .draggable-note .note-date {
+            font-size: 0.7rem;
+            color: #999;
+            margin-bottom: 0.5rem;
+        }
+        
+        .link-line {
+            position: absolute;
+            background-color: #2196F3;
+            height: 2px;
+            transform-origin: 0 0;
+            z-index: 5;
+        }
+        
+        .login-form {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+        
+        .login-form .form-container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: loginFormFadeIn 0.5s ease-out;
+        }
+        
+        @keyframes loginFormFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .login-form h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+            font-size: 2rem;
+            animation: loginTitleSlideIn 0.6s ease-out 0.2s both;
+        }
+        
+        @keyframes loginTitleSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-form input {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            animation: loginInputSlideIn 0.6s ease-out 0.4s both;
+        }
+        
+        @keyframes loginInputSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-form input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        .login-form button {
+            width: 100%;
+            padding: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: loginButtonSlideIn 0.6s ease-out 0.6s both;
+        }
+        
+        @keyframes loginButtonSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-form button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .content {
+            display: none;
+        }
+        
+        .content h1 {
+            margin-bottom: 1rem;
+            color: #333;
+            text-align: center;
+        }
+        
+        .content p {
+            margin-bottom: 2rem;
+            color: #666;
+            text-align: center;
+        }
+        
+        .note-form {
+            background-color: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+        }
+        
+        .note-form h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .note-form input,
+        .note-form textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .note-form textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .note-form button {
+            padding: 0.6rem 1.2rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .note-form button:hover {
+            background-color: #45a049;
+        }
+        
+        .notes-list {
+            margin-top: 2rem;
+        }
+        
+        .notes-list h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .note-item {
+            background-color: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .note-item h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .note-item p {
+            margin-bottom: 1rem;
+            color: #666;
+            text-align: left;
+        }
+        
+        .note-item .note-date {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 1rem;
+        }
+        
+        .note-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .note-actions button {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .note-actions .edit-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .note-actions .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .note-actions .edit-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .note-actions .delete-btn:hover {
+            background-color: #da190b;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem auto;
+            }
+            
+            .note-actions {
+                flex-direction: column;
+            }
+            
+            .note-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登录表单 -->
+        <div class="login-form" id="loginForm">
+            <div class="form-container">
+                <h2 id="formTitle">请输入密码访问</h2>
+                <input type="password" id="password" placeholder="输入密码">
+                <!-- 新密码和确认密码字段（仅重置密码时显示） -->
+                <input type="password" id="newPassword" placeholder="输入新密码（6个英文字符或数字）" style="display: none;">
+                <input type="password" id="confirmNewPassword" placeholder="确认新密码" style="display: none;">
+                <button onclick="checkPassword()" id="loginBtn">登录</button>
+                <button onclick="switchToCustomPassword()" id="customPasswordBtn" style="margin-top: 10px; background-color: #2196F3;">自定义密码</button>
+                <button onclick="switchToForgotPassword()" id="forgotPasswordBtn" style="margin-top: 10px; background-color: #FF9800;">忘记密码</button>
+                <button onclick="switchToLogin()" id="backToLoginBtn" style="margin-top: 10px; background-color: #9E9E9E; display: none;">返回登录</button>
+                <button onclick="resetPassword()" id="resetPasswordBtn" style="margin-top: 10px; background-color: #4CAF50; display: none;">重置密码</button>
+                <button onclick="saveCustomPassword()" id="saveCustomPasswordBtn" style="margin-top: 10px; background-color: #4CAF50; display: none;">保存密码</button>
+            </div>
+        </div>
+        
+        <!-- 笔记表单弹出窗口 -->
+        <div class="note-form-popup" id="noteForm" style="display: none;">
+            <input type="text" id="noteTitle" placeholder="笔记标题">
+            <div class="form-actions">
+                <button class="content-btn" onclick="openContentEditor()">正文书写</button>
+                <button class="save-btn" onclick="addNote()">保存</button>
+                <button class="cancel-btn" onclick="closeNoteForm()">×</button>
+            </div>
+        </div>
+        
+        <!-- 正文编辑器弹出窗口 -->
+        <div class="content-editor-popup" id="contentEditor" style="display: none;">
+            <div class="content-with-toolbar">
+                <!-- 文本格式化工具栏 -->
+                <div class="text-format-toolbar">
+                    <div class="color-picker">
+                        <input type="color" id="textColor" value="#000000" title="颜色">
+                    </div>
+                    <div class="toolbar-item" onclick="toggleFontSizeMenu()">
+                        <span id="currentFontSize">14px</span>
+                    </div>
+                    <div class="toolbar-item" onclick="formatText('bold')" title="加粗">B</div>
+                    <div class="toolbar-item" onclick="formatText('italic')" title="斜体">I</div>
+                    <!-- 字体大小下拉菜单 -->
+                    <div class="font-size-menu" id="fontSizeMenu" style="display: none;">
+                        <div class="menu-item" onclick="setFontSize('12')">12px</div>
+                        <div class="menu-item" onclick="setFontSize('14')">14px</div>
+                        <div class="menu-item" onclick="setFontSize('16')">16px</div>
+                        <div class="menu-item" onclick="setFontSize('18')">18px</div>
+                        <div class="menu-item" onclick="setFontSize('20')">20px</div>
+                    </div>
+                </div>
+                <textarea id="noteContent" placeholder="笔记内容" style="min-height: 700px;"></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="save-btn" onclick="closeContentEditor()">完成</button>
+                <button class="cancel-btn" onclick="closeContentEditor()">×</button>
+            </div>
+        </div>
+        
+        <!-- 私密内容 -->
+        <div class="content" id="content">
+            <!-- 侧栏 -->
+            <div class="sidebar" id="sidebar">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>画布</h3>
+                    <button class="toggle-sidebar-btn" onclick="toggleSidebar()">≡</button>
+                </div>
+                <div class="canvas-list">
+                    <div class="canvas-item active" onclick="switchPage(1)">画布 1</div>
+                    <div class="add-canvas-btn" onclick="addCanvas()">+ 添加画布</div>
+                </div>
+            </div>
+            
+            <!-- 新建笔记按钮 -->
+            <button class="add-note-btn" onclick="showNoteForm()">+</button>
+            
+            <!-- 打开侧栏按钮 -->
+            <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰</button>
+            
+            <!-- 文件夹按钮 -->
+            <button class="folder-btn" onclick="toggleFolder()" ondragover="allowDrop(event)" ondrop="dropToFolder(event)">B</button>
+            
+            <!-- 回收站按钮 -->
+            <button class="trash-btn" onclick="toggleTrash()" ondragover="allowDrop(event)" ondrop="dropToTrash(event)">R</button>
+            
+            <!-- 退出登录按钮 -->
+            <button class="logout-btn" onclick="logout()">退出</button>
+            
+            <!-- 文件夹面板 -->
+            <div class="folder-panel" id="folderPanel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>已保存的笔记</h3>
+                    <button class="close-btn" onclick="toggleFolder()">×</button>
+                </div>
+                <div id="folderNotes"></div>
+            </div>
+            
+            <!-- 回收站面板 -->
+            <div class="trash-panel" id="trashPanel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>回收站</h3>
+                    <button class="close-btn" onclick="toggleTrash()">×</button>
+                </div>
+                <div id="trashNotes"></div>
+                <button class="empty-trash-btn" onclick="emptyTrash()">清空回收站</button>
+            </div>
+            
+            <!-- 左侧笔记面板 -->
+            <div class="notes-panel" style="display: none;">
+                <!-- 笔记列表 -->
+                <div class="notes-list" id="notesList">
+                    <!-- 笔记将通过JavaScript动态添加 -->
+                </div>
+            </div>
+            
+            <!-- 右侧画布区域 -->
+            <div class="canvas-area" id="canvasArea">
+                <!-- 拖拽的笔记和连接线将在这里显示 -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 笔记数据
+        // 初始密码
+        const INITIAL_PASSWORD = "1";
+        
+        // 从本地存储获取密码，如果不存在则使用初始密码
+        function getPassword() {
+            return localStorage.getItem("appPassword") || INITIAL_PASSWORD;
+        }
+        
+        // 保存密码到本地存储
+        function savePassword(password) {
+            localStorage.setItem("appPassword", password);
+        }
+        
+        // 笔记数据
+        let notes = [];
+        let editingNoteId = null;
+        let draggedNote = null;
+        let links = [];
+        let isLinking = false;
+        let linkStartNote = null;
+        
+        // 切换到自定义密码界面
+        function switchToCustomPassword() {
+            document.getElementById('formTitle').textContent = '自定义密码';
+            document.getElementById('password').placeholder = '输入当前密码';
+            document.getElementById('newPassword').style.display = 'block';
+            document.getElementById('confirmNewPassword').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('customPasswordBtn').style.display = 'none';
+            document.getElementById('forgotPasswordBtn').style.display = 'none';
+            document.getElementById('backToLoginBtn').style.display = 'block';
+            document.getElementById('saveCustomPasswordBtn').style.display = 'block';
+        }
+        
+        // 切换到忘记密码界面
+        function switchToForgotPassword() {
+            document.getElementById('formTitle').textContent = '重置密码';
+            document.getElementById('password').placeholder = '输入初始密码（1）';
+            document.getElementById('newPassword').style.display = 'block';
+            document.getElementById('confirmNewPassword').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('customPasswordBtn').style.display = 'none';
+            document.getElementById('forgotPasswordBtn').style.display = 'none';
+            document.getElementById('backToLoginBtn').style.display = 'block';
+            document.getElementById('resetPasswordBtn').style.display = 'block';
+        }
+        
+        // 切换到登录界面
+        function switchToLogin() {
+            document.getElementById('formTitle').textContent = '请输入密码访问';
+            document.getElementById('password').placeholder = '输入密码';
+            document.getElementById('newPassword').style.display = 'none';
+            document.getElementById('confirmNewPassword').style.display = 'none';
+            document.getElementById('loginBtn').style.display = 'block';
+            document.getElementById('forgotPasswordBtn').style.display = 'block';
+            document.getElementById('backToLoginBtn').style.display = 'none';
+            document.getElementById('resetPasswordBtn').style.display = 'none';
+            document.getElementById('saveCustomPasswordBtn').style.display = 'none';
+            // 如果已经设置了自定义密码，则不再显示自定义密码按钮
+            if (getPassword() === INITIAL_PASSWORD) {
+                document.getElementById('customPasswordBtn').style.display = 'block';
+            } else {
+                document.getElementById('customPasswordBtn').style.display = 'none';
+            }
+            // 清空输入框
+            document.getElementById('password').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+        }
+        
+        // 保存自定义密码
+        function saveCustomPassword() {
+            const currentPassword = document.getElementById('password').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            // 验证当前密码
+            if (currentPassword !== getPassword()) {
+                alert('当前密码错误');
+                return;
+            }
+            
+            // 验证新密码
+            if (newPassword.length !== 6 || !/^[a-zA-Z0-9]+$/.test(newPassword)) {
+                alert('新密码必须是6个英文字符或数字');
+                return;
+            }
+            
+            // 验证确认密码
+            if (newPassword !== confirmNewPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+            
+            // 保存新密码
+            savePassword(newPassword);
+            alert('密码设置成功，请使用新密码登录');
+            switchToLogin();
+        }
+        
+        // 重置密码
+        function resetPassword() {
+            const initialPassword = document.getElementById('password').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            // 验证初始密码
+            if (initialPassword !== INITIAL_PASSWORD) {
+                alert('初始密码错误');
+                return;
+            }
+            
+            // 验证新密码
+            if (newPassword.length !== 6 || !/^[a-zA-Z0-9]+$/.test(newPassword)) {
+                alert('新密码必须是6个英文字符或数字');
+                return;
+            }
+            
+            // 验证确认密码
+            if (newPassword !== confirmNewPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+            
+            // 保存新密码
+            savePassword(newPassword);
+            alert('密码重置成功，请使用新密码登录');
+            switchToLogin();
+        }
+        
+        function checkPassword() {
+            const passwordInput = document.getElementById("password");
+            const loginForm = document.getElementById("loginForm");
+            const content = document.getElementById("content");
+            
+            if (passwordInput.value === getPassword()) {
+                loginForm.style.display = "none";
+                content.style.display = "flex";
+                loadNotes();
+                loadLinks();
+                // 初始化拖拽功能
+                initDragAndDrop();
+                // 渲染笔记动画形象
+                createNoteAnimation();
+            } else {
+                alert("密码错误，请重试");
+                passwordInput.value = "";
+            }
+        }
+        
+        // 按Enter键也可以提交
+        document.getElementById("password").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                // 检查当前是否在重置密码界面
+                if (document.getElementById('resetPasswordBtn').style.display !== 'none') {
+                    resetPassword();
+                } 
+                // 检查当前是否在自定义密码界面
+                else if (document.getElementById('saveCustomPasswordBtn').style.display !== 'none') {
+                    saveCustomPassword();
+                } 
+                // 否则执行登录
+                else {
+                    checkPassword();
+                }
+            }
+        });
+        
+        // 初始化登录界面
+        function initLoginForm() {
+            // 如果已经设置了自定义密码，则不显示自定义密码按钮
+            if (getPassword() !== INITIAL_PASSWORD) {
+                document.getElementById('customPasswordBtn').style.display = 'none';
+            }
+        }
+        
+
+        
+        // 退出登录
+        function logout() {
+            // 退出前保存数据
+            saveUserData();
+            
+            const loginForm = document.getElementById("loginForm");
+            const content = document.getElementById("content");
+            
+            // 显示登录表单，隐藏主内容
+            loginForm.style.display = "flex";
+            content.style.display = "none";
+            
+            // 重置登录表单
+            switchToLogin();
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            initLoginForm();
+        };
+        
+        // 从本地存储加载笔记
+        function loadNotes() {
+            // 先尝试从userData加载
+            const storedUserData = localStorage.getItem("userData");
+            if (storedUserData) {
+                const userData = JSON.parse(storedUserData);
+                if (userData.notes) {
+                    notes = userData.notes;
+                    return;
+                }
+            }
+            // 再尝试从privateNotes加载（向后兼容）
+            const storedNotes = localStorage.getItem("privateNotes");
+            if (storedNotes) {
+                notes = JSON.parse(storedNotes);
+            }
+        }
+        
+        // 保存笔记到本地存储
+        function saveNotes() {
+            saveUserData();
+        }
+        
+        // 从本地存储加载链接
+        function loadLinks() {
+            // 先尝试从userData加载
+            const storedUserData = localStorage.getItem("userData");
+            if (storedUserData) {
+                const userData = JSON.parse(storedUserData);
+                if (userData.links) {
+                    links = userData.links;
+                    return;
+                }
+            }
+            // 再尝试从noteLinks加载（向后兼容）
+            const storedLinks = localStorage.getItem("noteLinks");
+            if (storedLinks) {
+                links = JSON.parse(storedLinks);
+            }
+        }
+        
+        // 保存链接到本地存储
+        function saveLinks() {
+            saveUserData();
+        }
+        
+        // 保存数据（用于向后兼容）
+        function saveUserData() {
+            // 保存笔记到localStorage
+            const userData = {
+                notes: notes,
+                links: links
+            };
+            localStorage.setItem('userData', JSON.stringify(userData));
+        }
+        
+        // 保存笔记（用于向后兼容）
+        function saveNotes() {
+            saveUserData();
+        }
+        
+        // 保存链接（用于向后兼容）
+        function saveLinks() {
+            saveUserData();
+        }
+        
+        // 添加新笔记
+        function addNote() {
+            const title = document.getElementById("noteTitle").value;
+            const content = document.getElementById("noteContent").value;
+            const textColor = document.getElementById("textColor").value;
+            const fontSize = document.getElementById("currentFontSize").textContent.replace('px', '');
+            
+            if (!title) {
+                alert("请填写笔记标题");
+                return;
+            }
+            
+            if (!content) {
+                alert("请填写笔记内容");
+                openContentEditor();
+                return;
+            }
+            
+            if (editingNoteId) {
+                // 编辑现有笔记
+                const noteIndex = notes.findIndex(note => note.id === editingNoteId);
+                if (noteIndex !== -1) {
+                    notes[noteIndex] = {
+                        ...notes[noteIndex],
+                        title,
+                        content,
+                        textColor,
+                        fontSize,
+                        updatedAt: new Date().toISOString()
+                    };
+                    editingNoteId = null;
+                    document.querySelector('.save-btn').textContent = "保存笔记";
+                }
+            } else {
+                // 创建新笔记
+                const newNote = {
+                    id: Date.now().toString(),
+                    title,
+                    content,
+                    textColor,
+                    fontSize,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    position: { x: 100, y: 100 }, // 默认位置
+                    inFolder: false // 默认不在文件夹中
+                };
+                notes.push(newNote);
+            }
+            
+            saveUserData();
+            // 创建笔记动画形象
+            createNoteAnimation();
+            // 渲染链接
+            renderLinks();
+            hideNoteForm();
+        }
+        
+        // 编辑笔记
+        function editNote(id) {
+            const note = notes.find(note => note.id === id);
+            if (note) {
+                document.getElementById("noteTitle").value = note.title;
+                document.getElementById("noteContent").value = note.content;
+                document.getElementById("textColor").value = note.textColor || "#000000";
+                document.getElementById("currentFontSize").textContent = (note.fontSize || "14") + "px";
+                editingNoteId = id;
+                document.querySelector('.save-btn').textContent = "更新笔记";
+                // 显示表单
+                document.getElementById("noteForm").style.display = "block";
+            }
+        }
+        
+        // 创建笔记动画形象
+        function createNoteAnimation(note) {
+            // 移除现有的笔记动画形象
+            const existingAnimations = document.querySelectorAll('.note-animation');
+            existingAnimations.forEach(anim => anim.remove());
+            
+            // 为每条不在文件夹和回收站中的笔记创建动画形象
+            const visibleNotes = notes.filter(note => !note.inFolder && !note.inTrash);
+            visibleNotes.forEach((note, index) => {
+                const noteAnimation = document.createElement('div');
+                noteAnimation.className = 'note-animation';
+                noteAnimation.dataset.id = note.id;
+                noteAnimation.draggable = true;
+                
+                // 设置位置
+                if (note.animationPosition) {
+                    noteAnimation.style.left = note.animationPosition.x + 'px';
+                    noteAnimation.style.top = note.animationPosition.y + 'px';
+                } else {
+                    // 计算位置，确保动画形象在视窗内
+                const isLeft = index % 2 === 0;
+                const leftPos = isLeft ? 20 : window.innerWidth - 270;
+                const topPos = 100 + (index * 180);
+                    noteAnimation.style.left = leftPos + 'px';
+                    noteAnimation.style.top = topPos + 'px';
+                    // 保存位置
+                    note.animationPosition = { x: leftPos, y: topPos };
+                }
+                
+                // 笔记头部
+                const noteHeader = document.createElement('div');
+                noteHeader.className = 'note-header';
+                
+                const noteTitle = document.createElement('div');
+                noteTitle.className = 'note-title';
+                noteTitle.textContent = note.title;
+                if (note.textColor) {
+                    noteTitle.style.color = note.textColor;
+                }
+                if (note.fontSize) {
+                    noteTitle.style.fontSize = note.fontSize + 'px';
+                }
+                
+                const headerButtons = document.createElement('div');
+                headerButtons.className = 'header-buttons';
+                
+                const openBtn = document.createElement('button');
+                openBtn.className = 'open-btn';
+                openBtn.textContent = '●';
+                openBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    openNote(note.id);
+                };
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '×';
+                deleteBtn.style.width = '20px';
+                deleteBtn.style.height = '20px';
+                deleteBtn.style.borderRadius = '50%';
+                deleteBtn.style.backgroundColor = '#dc3545';
+                deleteBtn.style.color = 'white';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.fontSize = '12px';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.display = 'flex';
+                deleteBtn.style.justifyContent = 'center';
+                deleteBtn.style.alignItems = 'center';
+                deleteBtn.style.transition = 'all 0.3s ease';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteNote(note.id);
+                };
+                
+                deleteBtn.onmouseover = () => {
+                    deleteBtn.style.backgroundColor = '#c82333';
+                    deleteBtn.style.transform = 'scale(1.1)';
+                };
+                
+                deleteBtn.onmouseout = () => {
+                    deleteBtn.style.backgroundColor = '#dc3545';
+                    deleteBtn.style.transform = 'scale(1)';
+                };
+                
+                headerButtons.appendChild(openBtn);
+                headerButtons.appendChild(deleteBtn);
+                
+                noteHeader.appendChild(noteTitle);
+                noteHeader.appendChild(headerButtons);
+                
+                // 链接按钮
+                const linkBtn = document.createElement('button');
+                linkBtn.className = 'link-btn';
+                linkBtn.textContent = '+';
+                linkBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    startLinking(note.id);
+                };
+                
+                noteAnimation.appendChild(noteHeader);
+                noteAnimation.appendChild(linkBtn);
+                
+                // 添加双击打开功能
+                noteAnimation.addEventListener('dblclick', () => {
+                    openNote(note.id);
+                });
+                
+                // 添加点击事件，用于链接功能
+                noteAnimation.addEventListener('click', (e) => {
+                    if (isLinking && linkStartNote && linkStartNote !== note.id) {
+                        // 完成链接
+                        // 检查是否已存在相同链接
+                        const existingLinkIndex = links.findIndex(link => 
+                            (link.from === linkStartNote && link.to === note.id) || 
+                            (link.from === note.id && link.to === linkStartNote)
+                        );
+                        
+                        if (existingLinkIndex === -1) {
+                            // 添加新链接
+                            links.push({ from: linkStartNote, to: note.id });
+                        } else {
+                            // 移除现有链接
+                            links.splice(existingLinkIndex, 1);
+                        }
+                        saveUserData();
+                        renderLinks();
+                        
+                        isLinking = false;
+                        linkStartNote = null;
+                        document.body.style.cursor = 'default';
+                    }
+                });
+                
+                // 添加拖拽功能
+                makeNoteDraggable(noteAnimation, note.id);
+                
+                // 添加拖拽开始事件
+                noteAnimation.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', note.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    // 保存原始大小
+                    noteAnimation.dataset.originalWidth = noteAnimation.style.width;
+                    noteAnimation.dataset.originalHeight = noteAnimation.style.height;
+                    // 缩小悬浮窗
+                    noteAnimation.style.width = '100px';
+                    noteAnimation.style.height = '60px';
+                    noteAnimation.style.fontSize = '12px';
+                });
+                
+                // 添加拖拽结束事件
+                noteAnimation.addEventListener('dragend', (e) => {
+                    // 恢复原始大小
+                    noteAnimation.style.width = noteAnimation.dataset.originalWidth || '';
+                    noteAnimation.style.height = noteAnimation.dataset.originalHeight || '';
+                    noteAnimation.style.fontSize = '';
+                });
+                
+                // 检查哪个画布是激活的
+                const activeCanvasItem = document.querySelector('.canvas-item.active');
+                const activeCanvasNumber = activeCanvasItem ? parseInt(activeCanvasItem.textContent.trim().split(' ')[1]) : 1;
+                
+                // 确定当前显示的画布
+                let targetCanvas;
+                if (activeCanvasNumber === 1) {
+                    targetCanvas = document.getElementById("canvasArea");
+                } else {
+                    // 找到当前页面中的画布
+                    const currentPage = document.getElementById(`page${activeCanvasNumber}`);
+                    if (currentPage) {
+                        targetCanvas = currentPage.querySelector('.canvas-area');
+                    }
+                }
+                
+                // 将笔记添加到当前画布
+                if (targetCanvas && targetCanvas.parentElement.style.display !== "none") {
+                    targetCanvas.appendChild(noteAnimation);
+                } else {
+                    // 默认添加到body
+                    document.body.appendChild(noteAnimation);
+                }
+            });
+            
+            // 保存笔记位置
+            saveNotes();
+        }
+        
+        // 使笔记可拖拽
+        function makeNoteDraggable(element, noteId) {
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            // 优化鼠标拖拽功能
+            element.addEventListener('mousedown', startDrag);
+            
+            function startDrag(e) {
+                // 如果点击的是按钮，不开始拖拽
+                if (e.target.classList.contains('open-btn') || e.target.classList.contains('link-btn') || e.target.classList.contains('delete-btn')) {
+                    return;
+                }
+                
+                isDragging = true;
+                // 保存原始大小
+                element.dataset.originalWidth = element.style.width;
+                element.dataset.originalHeight = element.style.height;
+                // 缩小悬浮窗
+                element.style.width = '100px';
+                element.style.height = '60px';
+                element.style.fontSize = '12px';
+                // 使用捕获阶段来确保事件被正确捕获
+                document.addEventListener('mousemove', drag, { capture: true });
+                document.addEventListener('mouseup', stopDrag, { capture: true });
+                // 阻止默认行为和冒泡
+                e.preventDefault();
+                e.stopPropagation();
+                // 立即设置元素位置，使中心对齐鼠标
+                drag(e);
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                // 阻止默认行为和冒泡
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 计算元素中心位置，使鼠标位于元素中心
+                let newX = e.clientX - (element.offsetWidth / 2);
+                let newY = e.clientY - (element.offsetHeight / 2);
+                
+                // 让元素自由跟随鼠标移动，中心对齐鼠标位置
+                element.style.left = newX + 'px';
+                element.style.top = newY + 'px';
+                
+                // 仅在拖拽结束时更新位置，提高性能
+            }
+            
+            function stopDrag() {
+                if (!isDragging) return;
+                
+                isDragging = false;
+                // 恢复原始大小
+                element.style.width = element.dataset.originalWidth || '';
+                element.style.height = element.dataset.originalHeight || '';
+                element.style.fontSize = '';
+                // 移除事件监听器
+                document.removeEventListener('mousemove', drag, { capture: true });
+                document.removeEventListener('mouseup', stopDrag, { capture: true });
+                
+                // 更新笔记位置并保存
+                const note = notes.find(n => n.id === noteId);
+                if (note) {
+                    note.animationPosition = { 
+                        x: parseInt(element.style.left) || 0, 
+                        y: parseInt(element.style.top) || 0 
+                    };
+                }
+                // 保存笔记位置
+                saveUserData();
+                // 更新链接线位置
+                renderLinks();
+            }
+            
+            // 浏览器默认拖拽功能（用于拖入垃圾桶和文件夹）
+            element.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', noteId);
+                e.dataTransfer.effectAllowed = 'move';
+                // 缩小悬浮窗
+                element.dataset.originalWidth = element.style.width;
+                element.dataset.originalHeight = element.style.height;
+                element.style.width = '100px';
+                element.style.height = '60px';
+                element.style.fontSize = '12px';
+            });
+            
+            element.addEventListener('dragend', (e) => {
+                // 恢复原始大小
+                element.style.width = element.dataset.originalWidth || '';
+                element.style.height = element.dataset.originalHeight || '';
+                element.style.fontSize = '';
+            });
+        }
+        
+        // 打开笔记
+        function openNote(id) {
+            const note = notes.find(note => note.id === id);
+            if (note) {
+                document.getElementById("noteTitle").value = note.title;
+                document.getElementById("noteContent").value = note.content;
+                document.getElementById("textColor").value = note.textColor || "#000000";
+                document.getElementById("currentFontSize").textContent = (note.fontSize || "14") + "px";
+                editingNoteId = id;
+                document.querySelector('.save-btn').textContent = "更新笔记";
+                // 显示表单
+                document.getElementById("noteForm").style.display = "block";
+            }
+        }
+        
+        // 切换文件夹面板
+        function toggleFolder() {
+            const folderPanel = document.getElementById("folderPanel");
+            if (folderPanel.style.display === "block") {
+                folderPanel.classList.remove("show");
+                setTimeout(() => {
+                    folderPanel.style.display = "none";
+                }, 300);
+            } else {
+                folderPanel.style.display = "block";
+                renderFolderNotes();
+                setTimeout(() => {
+                    folderPanel.classList.add("show");
+                }, 10);
+            }
+        }
+        
+        // 切换回收站面板
+        function toggleTrash() {
+            const trashPanel = document.getElementById("trashPanel");
+            if (trashPanel.style.display === "block") {
+                trashPanel.classList.remove("show");
+                setTimeout(() => {
+                    trashPanel.style.display = "none";
+                }, 300);
+            } else {
+                trashPanel.style.display = "block";
+                renderTrashNotes();
+                setTimeout(() => {
+                    trashPanel.classList.add("show");
+                }, 10);
+            }
+        }
+        
+        // 切换第二张画布
+        function toggleCanvas() {
+            switchPage(2);
+        }
+        
+        // 通过侧栏切换页面
+        function switchPage(pageNumber) {
+            // 隐藏所有页面
+            const allPages = document.querySelectorAll('.page');
+            allPages.forEach(page => {
+                page.style.display = "none";
+            });
+            
+            // 隐藏默认画布
+            const defaultCanvas = document.getElementById("canvasArea");
+            if (defaultCanvas) {
+                defaultCanvas.style.display = "none";
+            }
+            
+            // 显示指定页面
+            if (pageNumber === 1) {
+                // 显示默认画布
+                if (defaultCanvas) {
+                    defaultCanvas.style.display = "block";
+                }
+            } else {
+                // 显示指定页面
+                const targetPage = document.getElementById(`page${pageNumber}`);
+                if (targetPage) {
+                    targetPage.style.display = "block";
+                }
+            }
+            
+            // 更新侧栏中画布项的激活状态
+            const canvasItems = document.querySelectorAll('.canvas-item');
+            canvasItems.forEach((item, index) => {
+                if (index + 1 === pageNumber) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // 重新创建笔记动画
+            createNoteAnimation();
+        }
+        
+        // 收起/展开侧栏
+        function toggleSidebar() {
+            const sidebar = document.getElementById("sidebar");
+            const body = document.body;
+            
+            // 切换侧栏状态
+            sidebar.classList.toggle('collapsed');
+            body.classList.toggle('sidebar-collapsed');
+            
+            // 切换所有画布区域的margin-left
+            const allCanvases = document.querySelectorAll('.canvas-area');
+            allCanvases.forEach(canvas => {
+                canvas.classList.toggle('expanded');
+            });
+        }
+        
+        // 添加新画布
+        function addCanvas() {
+            // 获取当前画布数量
+            const canvasItems = document.querySelectorAll('.canvas-item');
+            const canvasCount = canvasItems.length + 1;
+            
+            // 创建新的页面元素
+            const newPage = document.createElement('div');
+            newPage.id = `page${canvasCount}`;
+            newPage.className = "page";
+            newPage.style.display = "none";
+            newPage.style.position = "fixed";
+            newPage.style.top = "0";
+            newPage.style.left = "0";
+            newPage.style.width = "100%";
+            newPage.style.height = "100%";
+            newPage.style.overflow = "hidden";
+            
+            // 创建新的画布元素
+            const newCanvas = document.createElement('div');
+            newCanvas.id = `canvas${canvasCount}`;
+            newCanvas.className = "canvas-area";
+            newCanvas.style.width = "100%";
+            newCanvas.style.height = "100%";
+            newCanvas.style.backgroundImage = "linear-gradient(#e0e0e0 1px, transparent 1px), linear-gradient(90deg, #e0e0e0 1px, transparent 1px)";
+            newCanvas.style.backgroundSize = "20px 20px";
+            newCanvas.style.backgroundPosition = "-1px -1px";
+            newCanvas.style.overflow = "hidden";
+            
+            // 添加新画布到页面
+            newPage.appendChild(newCanvas);
+            document.body.appendChild(newPage);
+            
+            // 在侧栏中添加新的画布项
+            const canvasList = document.querySelector('.canvas-list');
+            const addCanvasBtn = document.querySelector('.add-canvas-btn');
+            
+            const newCanvasItem = document.createElement('div');
+            newCanvasItem.className = 'canvas-item';
+            newCanvasItem.textContent = `画布 ${canvasCount}`;
+            newCanvasItem.onclick = () => switchPage(canvasCount);
+            
+            // 插入到添加按钮之前
+            canvasList.insertBefore(newCanvasItem, addCanvasBtn);
+            
+            // 切换到新页面
+            switchPage(canvasCount);
+        }
+        
+        // 渲染文件夹中的笔记
+        function renderFolderNotes() {
+            const folderNotes = document.getElementById("folderNotes");
+            folderNotes.innerHTML = "";
+            
+            // 只显示在文件夹中的笔记
+            const folderNotesList = notes.filter(note => (note.inFolder || note.inFolder === undefined) && !note.inTrash);
+            
+            folderNotesList.forEach(note => {
+                const noteItem = document.createElement('div');
+                noteItem.className = 'folder-note-item';
+                noteItem.dataset.id = note.id;
+                
+                // 添加拖拽功能
+                noteItem.draggable = true;
+                noteItem.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', note.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                const noteTitle = document.createElement('h4');
+                noteTitle.textContent = note.title;
+                
+                const noteContent = document.createElement('p');
+                noteContent.textContent = note.content;
+                
+                // 添加操作按钮
+                const actionsDiv = document.createElement('div');
+                actionsDiv.style.display = 'flex';
+                actionsDiv.style.gap = '0.3rem';
+                actionsDiv.style.marginTop = '0.5rem';
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '删除';
+                deleteBtn.style.fontSize = '0.6rem';
+                deleteBtn.style.padding = '0.2rem 0.5rem';
+                deleteBtn.style.backgroundColor = '#dc3545';
+                deleteBtn.style.color = 'white';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.borderRadius = '4px';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    // 直接调用删除逻辑，不使用confirm
+                    const noteId = noteItem.dataset.id;
+                    const foundNote = notes.find(n => n.id === noteId);
+                    if (foundNote) {
+                        foundNote.inTrash = true;
+                        // 从画布中移除笔记
+                        const noteElement = document.querySelector(`.note-animation[data-id="${noteId}"]`);
+                        if (noteElement) {
+                            noteElement.remove();
+                        }
+                    }
+                    saveNotes();
+                    createNoteAnimation();
+                    renderFolderNotes();
+                    renderTrashNotes();
+                };
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = '复制';
+                copyBtn.style.fontSize = '0.6rem';
+                copyBtn.style.padding = '0.2rem 0.5rem';
+                copyBtn.style.backgroundColor = '#28a745';
+                copyBtn.style.color = 'white';
+                copyBtn.style.border = 'none';
+                copyBtn.style.borderRadius = '4px';
+                copyBtn.style.cursor = 'pointer';
+                copyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const noteId = noteItem.dataset.id;
+                    const note = notes.find(n => n.id === noteId);
+                    if (note) {
+                        // 创建笔记的副本
+                        const copyNote = {
+                            id: Date.now().toString(),
+                            title: note.title + ' (副本)',
+                            content: note.content,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                            inFolder: true,
+                            inTrash: false
+                        };
+                        notes.push(copyNote);
+                        saveNotes();
+                        renderFolderNotes();
+                    }
+                };
+                
+                actionsDiv.appendChild(deleteBtn);
+                actionsDiv.appendChild(copyBtn);
+                
+                noteItem.appendChild(noteTitle);
+                noteItem.appendChild(noteContent);
+                noteItem.appendChild(actionsDiv);
+                
+                folderNotes.appendChild(noteItem);
+            });
+        }
+        
+        // 渲染回收站中的笔记
+        function renderTrashNotes() {
+            const trashNotes = document.getElementById("trashNotes");
+            trashNotes.innerHTML = "";
+            
+            // 只显示在回收站中的笔记
+            const trashNotesList = notes.filter(note => note.inTrash);
+            
+            trashNotesList.forEach(note => {
+                const noteItem = document.createElement('div');
+                noteItem.className = 'trash-note-item';
+                noteItem.dataset.id = note.id;
+                
+                const noteTitle = document.createElement('h4');
+                noteTitle.textContent = note.title;
+                
+                const noteContent = document.createElement('p');
+                noteContent.textContent = note.content;
+                
+                // 添加操作按钮
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'trash-note-actions';
+                
+                const restoreBtn = document.createElement('button');
+                restoreBtn.className = 'restore-btn';
+                restoreBtn.textContent = '恢复';
+                restoreBtn.onclick = () => restoreNote(noteItem.dataset.id);
+                
+                const deletePermanentlyBtn = document.createElement('button');
+                deletePermanentlyBtn.className = 'delete-permanently-btn';
+                deletePermanentlyBtn.textContent = '永久删除';
+                deletePermanentlyBtn.onclick = () => deletePermanently(noteItem.dataset.id);
+                
+                actionsDiv.appendChild(restoreBtn);
+                actionsDiv.appendChild(deletePermanentlyBtn);
+                
+                noteItem.appendChild(noteTitle);
+                noteItem.appendChild(noteContent);
+                noteItem.appendChild(actionsDiv);
+                
+                trashNotes.appendChild(noteItem);
+            });
+        }
+        
+        // 删除笔记（移到回收站）
+        function deleteNote(id) {
+            if (confirm("确定要将这条笔记移到回收站吗？")) {
+                const note = notes.find(n => n.id === id);
+                if (note) {
+                    note.inTrash = true;
+                    // 从画布中移除笔记
+                    const noteElement = document.querySelector(`.note-animation[data-id="${id}"]`);
+                    if (noteElement) {
+                        noteElement.remove();
+                    }
+                }
+                saveUserData();
+                createNoteAnimation();
+                renderFolderNotes();
+                renderTrashNotes();
+            }
+        }
+        
+        // 从回收站恢复笔记
+        function restoreNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                note.inTrash = false;
+                note.inFolder = true; // 恢复到文件夹中
+            }
+            saveUserData();
+            renderTrashNotes();
+            renderFolderNotes();
+        }
+        
+        // 永久删除笔记
+        function deletePermanently(id) {
+            if (confirm("确定要永久删除这条笔记吗？此操作不可恢复。")) {
+                notes = notes.filter(note => note.id !== id);
+                // 删除相关链接
+                links = links.filter(link => link.from !== id && link.to !== id);
+                saveUserData();
+                renderTrashNotes();
+                renderFolderNotes();
+                createNoteAnimation();
+            }
+        }
+        
+        // 清空回收站
+        function emptyTrash() {
+            if (confirm("确定要清空回收站吗？此操作不可恢复。")) {
+                const trashNoteIds = notes.filter(note => note.inTrash).map(note => note.id);
+                notes = notes.filter(note => !note.inTrash);
+                // 删除相关链接
+                links = links.filter(link => !trashNoteIds.includes(link.from) && !trashNoteIds.includes(link.to));
+                saveUserData();
+                renderTrashNotes();
+            }
+        }
+        
+        // 允许拖放
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+        
+        // 拖放到文件夹
+        function dropToFolder(event) {
+            event.preventDefault();
+            const noteId = event.dataTransfer.getData('text/plain');
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                note.inFolder = true;
+                note.inTrash = false;
+                // 从画布中移除笔记
+                const noteElement = document.querySelector(`.note-animation[data-id="${noteId}"]`);
+                if (noteElement) {
+                    noteElement.remove();
+                }
+                saveUserData();
+                createNoteAnimation();
+                renderFolderNotes();
+            }
+        }
+        
+        // 拖放到回收站
+        function dropToTrash(event) {
+            event.preventDefault();
+            const noteId = event.dataTransfer.getData('text/plain');
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                note.inTrash = true;
+                note.inFolder = false;
+                // 从画布中移除笔记
+                const noteElement = document.querySelector(`.note-animation[data-id="${noteId}"]`);
+                if (noteElement) {
+                    noteElement.remove();
+                }
+                saveUserData();
+                createNoteAnimation();
+                renderTrashNotes();
+            }
+        }
+        
+        // 初始化拖拽功能
+        function initDragAndDrop() {
+            // 为所有可拖拽元素添加拖拽功能
+            document.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('note-animation') || e.target.classList.contains('folder-note-item')) {
+                    const noteId = e.target.dataset.id;
+                    if (noteId) {
+                        e.dataTransfer.setData('text/plain', noteId);
+                        e.dataTransfer.effectAllowed = 'move';
+                    }
+                }
+            });
+            
+            // 为文件夹面板添加拖放功能
+            const folderPanel = document.getElementById("folderPanel");
+            folderPanel.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            
+            folderPanel.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const noteId = e.dataTransfer.getData('text/plain');
+                // 从画布中移除笔记
+                const noteElement = document.querySelector(`.note-animation[data-id="${noteId}"]`);
+                if (noteElement) {
+                    noteElement.remove();
+                }
+                // 更新笔记状态
+                const note = notes.find(n => n.id === noteId);
+                if (note) {
+                    note.inFolder = true;
+                    delete note.animationPosition;
+                }
+                saveNotes();
+                createNoteAnimation();
+                renderFolderNotes();
+            });
+            
+            // 为整个文档添加拖放功能，这样可以在任何地方拖放笔记
+            document.addEventListener('dragover', (e) => {
+                // 排除文件夹面板，避免冲突
+                if (!e.target.closest('.folder-panel')) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                }
+            });
+            
+            document.addEventListener('drop', (e) => {
+                // 排除文件夹面板，避免冲突
+                if (!e.target.closest('.folder-panel')) {
+                    e.preventDefault();
+                    const noteId = e.dataTransfer.getData('text/plain');
+                    // 更新笔记状态
+                    const note = notes.find(n => n.id === noteId);
+                    if (note) {
+                        note.inFolder = false;
+                        // 设置新位置（相对于整个文档）
+                        note.animationPosition = {
+                            x: e.clientX - 75, // 75是笔记宽度的一半
+                            y: e.clientY - 50   // 50是笔记高度的一半
+                        };
+                    }
+                    saveNotes();
+                    createNoteAnimation();
+                    renderFolderNotes();
+                }
+            });
+        }
+        
+        // 删除笔记
+        function deleteNotePermanently(id) {
+            if (confirm("确定要删除这条笔记吗？")) {
+                notes = notes.filter(note => note.id !== id);
+                // 删除相关链接
+                links = links.filter(link => link.from !== id && link.to !== id);
+                saveNotes();
+                saveLinks();
+                renderNotes();
+                renderDraggableNotes();
+                renderLinks();
+                // 更新笔记动画形象
+                createNoteAnimation();
+            }
+        }
+        
+        // 渲染笔记列表
+        function renderNotes() {
+            const notesList = document.getElementById("notesList");
+            
+            // 清空现有内容
+            const noteItems = notesList.querySelectorAll('.note-item');
+            noteItems.forEach(item => item.remove());
+            
+            // 如果没有笔记，显示提示
+            if (notes.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.textContent = "还没有笔记，点击上方添加新笔记";
+                emptyMessage.style.textAlign = "center";
+                emptyMessage.style.color = "#999";
+                notesList.appendChild(emptyMessage);
+                return;
+            }
+            
+            // 按更新时间排序，最新的在前面
+            const sortedNotes = [...notes].sort((a, b) => 
+                new Date(b.updatedAt) - new Date(a.updatedAt)
+            );
+            
+            // 渲染每条笔记
+            sortedNotes.forEach(note => {
+                const noteItem = document.createElement('div');
+                noteItem.className = "note-item";
+                
+                const noteTitle = document.createElement('h4');
+                noteTitle.textContent = note.title;
+                
+                const noteContent = document.createElement('p');
+                noteContent.textContent = note.content;
+                
+                const noteActions = document.createElement('div');
+                noteActions.className = "note-actions";
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = "edit-btn";
+                editBtn.textContent = "编辑";
+                editBtn.onclick = () => editNote(note.id);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = "delete-btn";
+                deleteBtn.textContent = "删除";
+                deleteBtn.onclick = () => deleteNote(note.id);
+                
+                const dragBtn = document.createElement('button');
+                dragBtn.className = "edit-btn";
+                dragBtn.textContent = "拖出";
+                dragBtn.onclick = () => createDraggableNote(note.id);
+                
+                noteActions.appendChild(editBtn);
+                noteActions.appendChild(dragBtn);
+                noteActions.appendChild(deleteBtn);
+                
+                noteItem.appendChild(noteTitle);
+                noteItem.appendChild(noteContent);
+                noteItem.appendChild(noteActions);
+                
+                notesList.appendChild(noteItem);
+            });
+        }
+        
+        // 创建可拖拽的笔记
+        function createDraggableNote(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            // 检查是否已经存在可拖拽笔记
+            const existingNote = document.querySelector(`.draggable-note[data-id="${noteId}"]`);
+            if (existingNote) {
+                existingNote.style.display = 'block';
+                return;
+            }
+            
+            const canvasArea = document.getElementById('canvasArea');
+            const draggableNote = document.createElement('div');
+            draggableNote.className = 'draggable-note';
+            draggableNote.dataset.id = noteId;
+            
+            const noteTitle = document.createElement('h4');
+            noteTitle.textContent = note.title;
+            
+            const noteContent = document.createElement('p');
+            noteContent.textContent = note.content;
+            
+            const noteActions = document.createElement('div');
+            noteActions.className = 'note-actions';
+            
+            const linkBtn = document.createElement('button');
+            linkBtn.className = 'edit-btn';
+            linkBtn.textContent = "链接";
+            linkBtn.onclick = (e) => {
+                e.stopPropagation();
+                startLinking(noteId);
+            };
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'delete-btn';
+            closeBtn.textContent = "关闭";
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                draggableNote.style.display = 'none';
+            };
+            
+            noteActions.appendChild(linkBtn);
+            noteActions.appendChild(closeBtn);
+            
+            draggableNote.appendChild(noteTitle);
+            draggableNote.appendChild(noteContent);
+            draggableNote.appendChild(noteActions);
+            
+            // 设置位置
+            if (note.position) {
+                draggableNote.style.left = note.position.x + 'px';
+                draggableNote.style.top = note.position.y + 'px';
+            }
+            
+            // 添加拖拽功能
+            makeDraggable(draggableNote, noteId);
+            
+            canvasArea.appendChild(draggableNote);
+        }
+        
+        // 使元素可拖拽
+        function makeDraggable(element, noteId) {
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            element.addEventListener('mousedown', startDrag);
+            
+            function startDrag(e) {
+                isDragging = true;
+                offsetX = e.clientX - element.getBoundingClientRect().left;
+                offsetY = e.clientY - element.getBoundingClientRect().top;
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', stopDrag);
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const canvasArea = document.getElementById('canvasArea');
+                const canvasRect = canvasArea.getBoundingClientRect();
+                
+                let newX = e.clientX - canvasRect.left - offsetX;
+                let newY = e.clientY - canvasRect.top - offsetY;
+                
+                // 限制在画布内
+                newX = Math.max(0, Math.min(newX, canvasRect.width - element.offsetWidth));
+                newY = Math.max(0, Math.min(newY, canvasRect.height - element.offsetHeight));
+                
+                element.style.left = newX + 'px';
+                element.style.top = newY + 'px';
+                
+                // 更新笔记位置
+                const note = notes.find(n => n.id === noteId);
+                if (note) {
+                    note.position = { x: newX, y: newY };
+                    saveNotes();
+                }
+                
+                // 重新渲染链接
+                renderLinks();
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', stopDrag);
+            }
+        }
+        
+        // 开始链接模式
+        function startLinking(noteId) {
+            if (isLinking) {
+                // 完成链接
+                if (linkStartNote && linkStartNote !== noteId) {
+                    // 检查是否已存在相同链接
+                    const existingLinkIndex = links.findIndex(link => 
+                        (link.from === linkStartNote && link.to === noteId) || 
+                        (link.from === noteId && link.to === linkStartNote)
+                    );
+                    
+                    if (existingLinkIndex === -1) {
+                        // 添加新链接
+                        links.push({ from: linkStartNote, to: noteId });
+                    } else {
+                        // 移除现有链接
+                        links.splice(existingLinkIndex, 1);
+                    }
+                    saveUserData();
+                    renderLinks();
+                }
+                isLinking = false;
+                linkStartNote = null;
+                document.body.style.cursor = 'default';
+            } else {
+                // 开始链接
+                isLinking = true;
+                linkStartNote = noteId;
+                document.body.style.cursor = 'crosshair';
+            }
+        }
+        
+        // 渲染可拖拽笔记
+        function renderDraggableNotes() {
+            const canvasArea = document.getElementById('canvasArea');
+            
+            // 清空现有可拖拽笔记
+            const draggableNotes = canvasArea.querySelectorAll('.draggable-note');
+            draggableNotes.forEach(note => note.remove());
+            
+            // 重新创建可拖拽笔记
+            notes.forEach(note => {
+                if (note.position) {
+                    createDraggableNote(note.id);
+                }
+            });
+        }
+        
+        // 渲染链接
+        function renderLinks() {
+            // 清空现有链接
+            const existingLinks = document.querySelectorAll('.link-line');
+            existingLinks.forEach(link => link.remove());
+            
+            // 清空现有SVG
+            const existingSvgs = document.querySelectorAll('svg');
+            existingSvgs.forEach(svg => {
+                if (svg.style.position === 'fixed' && svg.style.zIndex === '49') {
+                    svg.remove();
+                }
+            });
+            
+            // 绘制新链接
+            links.forEach(link => {
+                const fromNote = document.querySelector(`.note-animation[data-id="${link.from}"]`);
+                const toNote = document.querySelector(`.note-animation[data-id="${link.to}"]`);
+                
+                if (fromNote && toNote) {
+                    // 获取蓝色+按钮的位置
+                    const fromLinkBtn = fromNote.querySelector('.link-btn');
+                    const toLinkBtn = toNote.querySelector('.link-btn');
+                    
+                    if (fromLinkBtn && toLinkBtn) {
+                        const fromLinkBtnRect = fromLinkBtn.getBoundingClientRect();
+                        const toLinkBtnRect = toLinkBtn.getBoundingClientRect();
+                        
+                        // 计算链接线的起点和终点（蓝色+按钮的正上方）
+                        const fromX = fromLinkBtnRect.left + fromLinkBtnRect.width / 2;
+                        const fromY = fromLinkBtnRect.top;
+                        const toX = toLinkBtnRect.left + toLinkBtnRect.width / 2;
+                        const toY = toLinkBtnRect.top;
+                        
+                        // 创建SVG路径
+                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.style.position = 'fixed';
+                        svg.style.left = '0';
+                        svg.style.top = '0';
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        svg.style.zIndex = '49';
+                        svg.style.pointerEvents = 'none';
+                        
+                        // 计算贝塞尔曲线控制点，使线条成为弧线
+                        const dx = toX - fromX;
+                        const dy = toY - fromY;
+                        const controlPointX1 = fromX + dx * 0.3;
+                        const controlPointY1 = fromY - Math.abs(dx) * 0.2;
+                        const controlPointX2 = fromX + dx * 0.7;
+                        const controlPointY2 = toY - Math.abs(dx) * 0.2;
+                        
+                        // 创建路径元素
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', `M ${fromX} ${fromY} C ${controlPointX1} ${controlPointY1}, ${controlPointX2} ${controlPointY2}, ${toX} ${toY}`);
+                        path.setAttribute('stroke', '#2196F3');
+                        path.setAttribute('stroke-width', '2');
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke-linecap', 'round');
+                        path.style.transition = 'all 0.3s ease';
+                        
+                        // 添加动画效果
+                        path.style.opacity = '0';
+                        path.style.strokeDasharray = '1000';
+                        path.style.strokeDashoffset = '1000';
+                        
+                        svg.appendChild(path);
+                        document.body.appendChild(svg);
+                        
+                        // 触发动画
+                        setTimeout(() => {
+                            path.style.opacity = '1';
+                            path.style.strokeDashoffset = '0';
+                        }, 10);
+                    }
+                }
+            });
+        }
+        
+        // 显示笔记表单
+        function showNoteForm() {
+            document.getElementById("noteForm").style.display = "block";
+            // 滚动到表单
+            document.getElementById("noteForm").scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 隐藏笔记表单
+        function hideNoteForm() {
+            document.getElementById("noteForm").style.display = "none";
+            clearNoteForm();
+        }
+        
+        // 打开正文编辑器
+        function openContentEditor() {
+            document.getElementById("contentEditor").style.display = "block";
+            document.getElementById("noteContent").focus();
+        }
+        
+        // 关闭正文编辑器
+        function closeContentEditor() {
+            document.getElementById("contentEditor").style.display = "none";
+        }
+        
+        // 清空笔记表单
+        function clearNoteForm() {
+            document.getElementById("noteTitle").value = "";
+            document.getElementById("noteContent").value = "";
+            document.getElementById("textColor").value = "#000000";
+            document.getElementById("currentFontSize").textContent = "14px";
+            editingNoteId = null;
+            document.querySelector('.note-form button:first-child').textContent = "保存笔记";
+        }
+        
+        // 关闭笔记表单
+        function closeNoteForm() {
+            document.getElementById("noteForm").style.display = "none";
+            clearNoteForm();
+        }
+        
+        // 格式化文本
+        function formatText(type) {
+            // 获取对应的按钮元素
+            const button = type === 'bold' ? document.querySelector('.toolbar-item:nth-child(3)') : document.querySelector('.toolbar-item:nth-child(4)');
+            
+            // 添加激活状态
+            if (button) {
+                button.classList.add('active');
+            }
+            
+            const textarea = document.getElementById('noteContent');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            if (selectedText) {
+                let formattedText;
+                if (type === 'bold') {
+                    formattedText = `**${selectedText}**`;
+                } else if (type === 'italic') {
+                    formattedText = `*${selectedText}*`;
+                }
+                
+                textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+                textarea.focus();
+                textarea.setSelectionRange(start + 2, end + 2);
+            }
+            
+            // 移除激活状态
+            if (button) {
+                setTimeout(() => {
+                    button.classList.remove('active');
+                }, 300);
+            }
+        }
+        
+        // 切换字体大小菜单
+        function toggleFontSizeMenu() {
+            const fontSizeMenu = document.getElementById('fontSizeMenu');
+            fontSizeMenu.style.display = fontSizeMenu.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // 设置字体大小
+        function setFontSize(size) {
+            document.getElementById('currentFontSize').textContent = size + 'px';
+            document.getElementById('fontSizeMenu').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
